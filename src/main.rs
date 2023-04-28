@@ -1,13 +1,47 @@
-use actix_web::{middleware::Logger, web, App, HttpResponse, HttpServer, Responder};
-use std::io;
+use actix_web::{middleware::Logger, web, App, HttpResponse, HttpServer};
+use std::{
+    env,
+    fs::File,
+    io::{self, Read},
+    path::Path,
+};
+
+fn get_path_to_ui_dir() -> String {
+    match env::var("DESK_LIGHT_UI_CLIENT") {
+        Ok(p) => p,
+        Err(_) => String::new(),
+    }
+}
+
+fn get_file_content(path: &Path) -> String {
+    let mut content = String::new();
+    match File::open(path) {
+        Ok(mut html) => {
+            html.read_to_string(&mut content);
+            ()
+        }
+        Err(error) => {
+            content = error.to_string();
+            ()
+        }
+    };
+
+    content
+}
 
 async fn index() -> HttpResponse {
-    let content = web::Bytes::from_static(include_bytes!("../../desk_light_ui_client/index.html"));
+    let path = get_path_to_ui_dir() + "/index.html";
+    let path = Path::new(&path);
+    let content = get_file_content(path);
+
     HttpResponse::Ok().content_type("text/html").body(content)
 }
 
 async fn script() -> HttpResponse {
-    let content = web::Bytes::from_static(include_bytes!("../../desk_light_ui_client/elm.js"));
+    let path = get_path_to_ui_dir() + "/elm.js";
+    let path = Path::new(&path);
+    let content = get_file_content(path);
+
     HttpResponse::Ok()
         .content_type("application/javascript")
         .body(content)
